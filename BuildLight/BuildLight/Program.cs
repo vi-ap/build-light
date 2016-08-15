@@ -1,9 +1,7 @@
 ﻿using BuildLight.Properties;
+using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Net;
 using System.Windows.Forms;
 using ThingM.Blink1;
 using ThingM.Blink1.ColorProcessor;
@@ -24,19 +22,19 @@ namespace BuildLight
         }
     }
 
-    internal class BuildLightApplicationContext : ApplicationContext
+    public class BuildLightApplicationContext : ApplicationContext
     {
-        private const string jenkinsApiUrl = "";
+        private const string BuildsMainPageUrl = "/api/json";
+        private const string BuildDetailsUrl = "{0}/api/json";
 
         private NotifyIcon trayIcon;
         Blink1 blink1;
-        int currentBuildNumber;
-        BuildStatus currentBuildStatus;
 
-        internal BuildLightApplicationContext()
+        public int currentBuildNumber;
+
+        public BuildLightApplicationContext()
         {
             currentBuildNumber = 0;
-            currentBuildStatus = BuildStatus.Unknown;
 
             blink1 = new Blink1();
             blink1.Open();
@@ -61,22 +59,68 @@ namespace BuildLight
             Application.Exit();
         }
 
-        private void pingJenkins()
+        private void pingJenkinsAndParseResponse()
         {
-
+            if(!isCurrentBuildLatest())
+            {
+                updateLight(getLatestBuildStatus());
+            }
         }
 
-        private void updateLight(BuildStatus buildStatus)
+        private bool isCurrentBuildLatest()
+        {
+            WebRequest buildRequest = WebRequest.Create(BuildsMainPageUrl);
+            buildRequest.ContentType = "application/json";
+            return isCurrentBuildLatest(buildRequest.GetResponse().ToString());
+        }
+
+        public bool isCurrentBuildLatest(string jsonString)
+        {
+            JObject jsonResponse = JObject.Parse(jsonString);
+
+            var topBuild = jsonResponse["builds"].First;
+            int buildNumber = (int)topBuild["number"];
+            if (buildNumber > currentBuildNumber)
+            {
+                currentBuildNumber = buildNumber;
+                return false;
+            }
+
+            return true;
+        }
+
+        private string getLatestBuildStatus()
+        {
+            WebRequest buildDetailsRequest = WebRequest.Create(String.Format(BuildDetailsUrl, currentBuildNumber));
+            buildDetailsRequest.ContentType = "application/json";
+            return getLatestBuildStatusFromJson(buildDetailsRequest.GetResponse().ToString());
+        }
+
+        public string getLatestBuildStatusFromJson(string jsonString)
+        {
+            JObject buildDetailsJson = JObject.Parse(jsonString);
+            bool currentlyBuilding = (bool)buildDetailsJson["building"];
+            if (currentlyBuilding)
+            {
+                return BuildStatusConstants.BUILDING;
+            }
+
+            string buildResult = (string)buildDetailsJson["result"];
+            
+            return buildResult;
+        }
+
+        private void updateLight(string buildStatus)
         {
             switch (buildStatus)
             {
-                case BuildStatus.Building:
+                case BuildStatusConstants.BUILDING:
                     blink1.SetColor(new HtmlHexadecimal(HtmlColorName.Yellow));
                     break;
-                case BuildStatus.Failure:
+                case BuildStatusConstants.FAILURE:
                     blink1.SetColor(new HtmlHexadecimal(HtmlColorName.Red));
                     break;
-                case BuildStatus.Success:
+                case BuildStatusConstants.SUCCESS:
                     blink1.SetColor(new HtmlHexadecimal(HtmlColorName.Green));
                     break;
                 default:
@@ -84,14 +128,14 @@ namespace BuildLight
                     break;
             }
         }
-
-        private enum BuildStatus
-        {
-            Success = 1,
-            Failure = 2,
-            Building = 3,
-            Unknown = 4
-        }
         
+    }
+
+    public static class BuildStatusConstants
+    {
+        public const string SUCCESS = "SUCCESS";
+        public const string FAILURE = "FAILURE";
+        public const string BUILDING = "BUILDING";
+        public const string UNKNOWN = "UNKNOWN";
     }
 }
