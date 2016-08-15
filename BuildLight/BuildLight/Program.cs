@@ -54,9 +54,14 @@ namespace BuildLight
         
         private void Exit(object sender, EventArgs evArgs)
         {
+            close();
+            Application.Exit();
+        }
+
+        public void close()
+        {
             blink1.Close();
             trayIcon.Visible = false;
-            Application.Exit();
         }
 
         private void pingJenkinsAndParseResponse()

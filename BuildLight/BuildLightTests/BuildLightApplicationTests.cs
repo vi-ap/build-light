@@ -14,10 +14,18 @@ namespace BuildLight
 
         private string jsonWithMainBuildPageInfo = JsonConvert.SerializeObject(new { builds = new object[] { new { number = 10, url = "some/url" }, new { number = 9, url = "some/url" } } });
 
+        private BuildLightApplicationContext application;
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            application.close();
+        }
+
         [TestMethod]
         public void TestJsonParsingWithStatusBuilding()
         {
-            BuildLightApplicationContext application = new BuildLightApplicationContext();
+            application = new BuildLightApplicationContext();
             string result = application.getLatestBuildStatusFromJson(jsonWithStatusBuilding);
             Assert.AreEqual(result, BuildStatusConstants.BUILDING);
         }
@@ -25,7 +33,7 @@ namespace BuildLight
         [TestMethod]
         public void TestJsonParsingWithStatusFailure()
         {
-            BuildLightApplicationContext application = new BuildLightApplicationContext();
+            application = new BuildLightApplicationContext();
             string result = application.getLatestBuildStatusFromJson(jsonWithStatusFailure);
             Assert.AreEqual(result, BuildStatusConstants.FAILURE);
         }
@@ -33,7 +41,7 @@ namespace BuildLight
         [TestMethod]
         public void TestJsonParsingWithStatusSuccess()
         {
-            BuildLightApplicationContext application = new BuildLightApplicationContext();
+            application = new BuildLightApplicationContext();
             string result = application.getLatestBuildStatusFromJson(jsonWithStatusSuccess);
             Assert.AreEqual(result, BuildStatusConstants.SUCCESS);
         }
@@ -41,7 +49,7 @@ namespace BuildLight
         [TestMethod]
         public void TestJsonParsingWithCurrentBuildLatest()
         {
-            BuildLightApplicationContext application = new BuildLightApplicationContext();
+            application = new BuildLightApplicationContext();
             application.currentBuildNumber = 10;
             bool result = application.isCurrentBuildLatest(jsonWithMainBuildPageInfo);
             Assert.IsTrue(result);
@@ -51,7 +59,7 @@ namespace BuildLight
         [TestMethod]
         public void TestJsonParsingWithCurrentBuildNotLatest()
         {
-            BuildLightApplicationContext application = new BuildLightApplicationContext();
+            application = new BuildLightApplicationContext();
             application.currentBuildNumber = 8;
             bool result = application.isCurrentBuildLatest(jsonWithMainBuildPageInfo);
             Assert.IsFalse(result);
