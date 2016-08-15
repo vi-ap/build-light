@@ -66,6 +66,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -89,7 +90,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="notify-icon.ico" />
+    <Content Include="Resources\notify-icon.ico" />
     <Content Include="Resources\notify-icon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
