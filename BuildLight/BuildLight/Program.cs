@@ -25,7 +25,7 @@ namespace BuildLight
     public class BuildLightApplicationContext : ApplicationContext
     {
         private const string BuildsMainPageUrl = "/api/json";
-        private const string BuildDetailsUrl = "{0}/api/json";
+        private const string BuildDetailsUrl = "/{0}/api/json";
 
         private NotifyIcon trayIcon;
         Blink1 blink1;
@@ -94,7 +94,7 @@ namespace BuildLight
             return true;
         }
 
-        private string getLatestBuildStatus()
+        public string getLatestBuildStatus()
         {
             WebRequest buildDetailsRequest = WebRequest.Create(String.Format(BuildDetailsUrl, currentBuildNumber));
             buildDetailsRequest.ContentType = "application/json";
