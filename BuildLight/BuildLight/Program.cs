@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 using ThingM.Blink1;
 using ThingM.Blink1.ColorProcessor;
@@ -18,7 +19,9 @@ namespace BuildLight
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new BuildLightApplicationContext());
+            BuildLightApplicationContext buildApplicationContext = new BuildLightApplicationContext();
+            Application.Run(buildApplicationContext);
+            buildApplicationContext.pingJenkinsAndHandleResponse();
         }
     }
 
@@ -29,7 +32,6 @@ namespace BuildLight
 
         private NotifyIcon trayIcon;
         Blink1 blink1;
-
         public int currentBuildNumber;
 
         public BuildLightApplicationContext()
@@ -64,12 +66,15 @@ namespace BuildLight
             trayIcon.Visible = false;
         }
 
-        private void pingJenkinsAndParseResponse()
+        public void pingJenkinsAndHandleResponse()
         {
             if(!isCurrentBuildLatest())
             {
                 updateLight(getLatestBuildStatus());
             }
+
+            Thread.Sleep(15000);
+            pingJenkinsAndHandleResponse();
         }
 
         private bool isCurrentBuildLatest()
