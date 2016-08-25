@@ -1,7 +1,11 @@
 ﻿using BuildLight.Properties;
 using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
+using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using ThingM.Blink1;
@@ -52,6 +56,7 @@ namespace BuildLight
                 Text = "Build Light",
                 Visible = true
             };
+
         }
         
         private void Exit(object sender, EventArgs evArgs)
@@ -101,9 +106,20 @@ namespace BuildLight
 
         public string getLatestBuildStatus()
         {
+            string username = "";
+            string apiToken = "";
             WebRequest buildDetailsRequest = WebRequest.Create(String.Format(BuildDetailsUrl, currentBuildNumber));
             buildDetailsRequest.ContentType = "application/json";
-            return getLatestBuildStatusFromJson(buildDetailsRequest.GetResponse().ToString());
+            string basicAuthToken = Convert.ToBase64String(Encoding.Default.GetBytes(username + ":" + apiToken));
+            buildDetailsRequest.Headers["Authorization"] = "Basic " + basicAuthToken;
+            buildDetailsRequest.PreAuthenticate = true;
+            WebResponse response = buildDetailsRequest.GetResponse();
+            string responseString;
+            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
+            {
+                responseString = streamReader.ReadToEnd();
+            }
+            return getLatestBuildStatusFromJson(responseString);
         }
 
         public string getLatestBuildStatusFromJson(string jsonString)
@@ -115,8 +131,7 @@ namespace BuildLight
                 return BuildStatusConstants.BUILDING;
             }
 
-            string buildResult = (string)buildDetailsJson["result"];
-            
+            string buildResult = (string)buildDetailsJson["result"];            
             return buildResult;
         }
 

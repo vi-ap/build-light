@@ -70,9 +70,10 @@ namespace BuildLight
         public void TestJenkinsWebRequest()
         {
             application = new BuildLightApplicationContext();
+            application.currentBuildNumber = 126;
             string result = application.getLatestBuildStatus();
             Assert.AreEqual(result, BuildStatusConstants.SUCCESS);
-            Assert.AreEqual(application.currentBuildNumber, 112);
+            Assert.AreEqual(application.currentBuildNumber, 126);
         }
     }
 }
