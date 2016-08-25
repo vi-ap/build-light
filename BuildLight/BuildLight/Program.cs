@@ -31,8 +31,8 @@ namespace BuildLight
 
     public class BuildLightApplicationContext : ApplicationContext
     {
-        private const string BuildsMainPageUrl = "/api/json";
-        private const string BuildDetailsUrl = "/{0}/api/json";
+        private const string buildsMainPageUrl = "/api/json";
+        private const string buildDetailsUrl = "/{0}/api/json";
 
         private NotifyIcon trayIcon;
         Blink1 blink1;
@@ -44,7 +44,7 @@ namespace BuildLight
 
             blink1 = new Blink1();
             blink1.Open();
-            blink1.SetColor(new HtmlHexadecimal(HtmlColorName.SlateGray));
+            blink1.SetColor(new HtmlHexadecimal(HtmlColorName.Gray));
 
             trayIcon = new NotifyIcon()
             {
@@ -82,11 +82,28 @@ namespace BuildLight
             pingJenkinsAndHandleResponse();
         }
 
+        private string getResponseFromJenkins(WebRequest webRequest)
+        {
+            string username = "";
+            string apiToken = "";
+            string basicAuthToken = Convert.ToBase64String(Encoding.Default.GetBytes(username + ":" + apiToken));
+            webRequest.Headers["Authorization"] = "Basic " + basicAuthToken;
+            webRequest.PreAuthenticate = true;
+            WebResponse response = webRequest.GetResponse();
+            string responseString;
+            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
+            {
+                responseString = streamReader.ReadToEnd();
+            }
+
+            return responseString;
+        }
+
         private bool isCurrentBuildLatest()
         {
-            WebRequest buildRequest = WebRequest.Create(BuildsMainPageUrl);
+            WebRequest buildRequest = WebRequest.Create(buildsMainPageUrl);
             buildRequest.ContentType = "application/json";
-            return isCurrentBuildLatest(buildRequest.GetResponse().ToString());
+            return isCurrentBuildLatest(getResponseFromJenkins(buildRequest));
         }
 
         public bool isCurrentBuildLatest(string jsonString)
@@ -106,20 +123,9 @@ namespace BuildLight
 
         public string getLatestBuildStatus()
         {
-            string username = "";
-            string apiToken = "";
-            WebRequest buildDetailsRequest = WebRequest.Create(String.Format(BuildDetailsUrl, currentBuildNumber));
+            WebRequest buildDetailsRequest = WebRequest.Create(String.Format(buildDetailsUrl, currentBuildNumber));
             buildDetailsRequest.ContentType = "application/json";
-            string basicAuthToken = Convert.ToBase64String(Encoding.Default.GetBytes(username + ":" + apiToken));
-            buildDetailsRequest.Headers["Authorization"] = "Basic " + basicAuthToken;
-            buildDetailsRequest.PreAuthenticate = true;
-            WebResponse response = buildDetailsRequest.GetResponse();
-            string responseString;
-            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
-            {
-                responseString = streamReader.ReadToEnd();
-            }
-            return getLatestBuildStatusFromJson(responseString);
+            return getLatestBuildStatusFromJson(getResponseFromJenkins(buildDetailsRequest));
         }
 
         public string getLatestBuildStatusFromJson(string jsonString)
