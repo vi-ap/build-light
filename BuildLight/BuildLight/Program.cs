@@ -7,6 +7,7 @@ using System.Net.Security;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using ThingM.Blink1;
 using ThingM.Blink1.ColorProcessor;
@@ -23,9 +24,7 @@ namespace BuildLight
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            BuildLightApplicationContext buildApplicationContext = new BuildLightApplicationContext();
-            Application.Run(buildApplicationContext);
-            buildApplicationContext.pingJenkinsAndHandleResponse();
+            Application.Run(new BuildLightApplicationContext());
         }
     }
 
@@ -57,6 +56,7 @@ namespace BuildLight
                 Visible = true
             };
 
+            pingJenkinsAndHandleResponse();
         }
         
         private void Exit(object sender, EventArgs evArgs)
@@ -71,14 +71,19 @@ namespace BuildLight
             trayIcon.Visible = false;
         }
 
-        public void pingJenkinsAndHandleResponse()
+        private void pingJenkinsAndHandleResponse()
         {
-            if(!isCurrentBuildLatest())
+            var delayTask = Task.Run(async () =>
             {
-                updateLight(getLatestBuildStatus());
-            }
+                if (!isCurrentBuildLatest())
+                {
+                    updateLight(getLatestBuildStatus());
+                }
 
-            Thread.Sleep(15000);
+                await Task.Delay(15000);
+            });
+
+            delayTask.Wait();
             pingJenkinsAndHandleResponse();
         }
 
