@@ -35,11 +35,13 @@ namespace BuildLight
 
         private NotifyIcon trayIcon;
         Blink1 blink1;
-        public int currentBuildNumber;
+        private int currentBuildNumber;
+        private string currentBuildStatus;
 
         public BuildLightApplicationContext()
         {
             currentBuildNumber = 0;
+            currentBuildStatus = BuildStatusConstants.UNKNOWN;
 
             blink1 = new Blink1();
             blink1.Open();
@@ -75,11 +77,12 @@ namespace BuildLight
         {
             var delayTask = Task.Run(async () =>
             {
-                if (!isCurrentBuildLatest())
+                setLatestBuildNumber();
+                if(isCurrentBuildStatusOutdated())
                 {
-                    updateLight(getLatestBuildStatus());
+                    updateLight(currentBuildStatus);
                 }
-
+                
                 await Task.Delay(15000);
             });
 
@@ -104,33 +107,38 @@ namespace BuildLight
             return responseString;
         }
 
-        private bool isCurrentBuildLatest()
+        public void setLatestBuildNumber()
         {
             WebRequest buildRequest = WebRequest.Create(buildsMainPageUrl);
             buildRequest.ContentType = "application/json";
-            return isCurrentBuildLatest(getResponseFromJenkins(buildRequest));
+            int buildNumber = getLatestBuildNumber(getResponseFromJenkins(buildRequest));
+            if (currentBuildNumber != buildNumber)
+            {
+                Console.WriteLine("Found new build. Updating current build number to: " + buildNumber);
+                currentBuildNumber = buildNumber;
+            }
         }
 
-        public bool isCurrentBuildLatest(string jsonString)
+        public int getLatestBuildNumber(string jsonString)
         {
             JObject jsonResponse = JObject.Parse(jsonString);
-
             var topBuild = jsonResponse["builds"].First;
-            int buildNumber = (int)topBuild["number"];
-            if (buildNumber > currentBuildNumber)
-            {
-                currentBuildNumber = buildNumber;
-                return false;
-            }
-
-            return true;
+            return (int)topBuild["number"];
         }
 
-        public string getLatestBuildStatus()
+        public bool isCurrentBuildStatusOutdated()
         {
             WebRequest buildDetailsRequest = WebRequest.Create(String.Format(buildDetailsUrl, currentBuildNumber));
             buildDetailsRequest.ContentType = "application/json";
-            return getLatestBuildStatusFromJson(getResponseFromJenkins(buildDetailsRequest));
+            string buildStatus = getLatestBuildStatusFromJson(getResponseFromJenkins(buildDetailsRequest));
+            if (currentBuildStatus != buildStatus)
+            {
+                Console.WriteLine("Build status changed. Updating build latest to: " + buildStatus);
+                currentBuildStatus = buildStatus;
+                return true;
+            }
+
+            return false;
         }
 
         public string getLatestBuildStatusFromJson(string jsonString)
