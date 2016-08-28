@@ -75,18 +75,26 @@ namespace BuildLight
 
         private void pingJenkinsAndHandleResponse()
         {
-            var delayTask = Task.Run(async () =>
+            try
             {
-                setLatestBuildNumber();
-                if(isCurrentBuildStatusOutdated())
+                var delayTask = Task.Run(async () =>
                 {
-                    updateLight(currentBuildStatus);
-                }
+                    setLatestBuildNumber();
+                    if(isCurrentBuildStatusOutdated())
+                    {
+                        updateLight(currentBuildStatus);
+                    }
                 
-                await Task.Delay(15000);
-            });
+                    await Task.Delay(15000);
+                });
 
-            delayTask.Wait();
+                delayTask.Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(DateTime.Now.ToString() + " :: Exception encountered: " + ex.Message);
+            }
+
             pingJenkinsAndHandleResponse();
         }
 
@@ -114,7 +122,7 @@ namespace BuildLight
             int buildNumber = getLatestBuildNumber(getResponseFromJenkins(buildRequest));
             if (currentBuildNumber != buildNumber)
             {
-                Console.WriteLine("Found new build. Updating current build number to: " + buildNumber);
+                Console.WriteLine(DateTime.Now.ToString() + " :: Updating current build number. Old: " + currentBuildNumber + ". New: " + buildNumber);
                 currentBuildNumber = buildNumber;
             }
         }
@@ -133,7 +141,7 @@ namespace BuildLight
             string buildStatus = getLatestBuildStatusFromJson(getResponseFromJenkins(buildDetailsRequest));
             if (currentBuildStatus != buildStatus)
             {
-                Console.WriteLine("Build status changed. Updating build latest to: " + buildStatus);
+                Console.WriteLine(DateTime.Now.ToString() + " :: Updating build status. Old: " + currentBuildStatus + ". New: " + buildStatus);
                 currentBuildStatus = buildStatus;
                 return true;
             }
