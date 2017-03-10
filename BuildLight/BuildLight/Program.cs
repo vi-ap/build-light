@@ -33,7 +33,7 @@ namespace BuildLight
         private const string buildsMainPageUrl = "/api/json";
         private const string buildDetailsUrl = "/{0}/api/json";
 
-        private NotifyIcon trayIcon;
+        private NotifyIcon trayIcon; 
         Blink1 blink1;
         private int currentBuildNumber;
         private string currentBuildStatus;
